@@ -31,12 +31,25 @@ clean:
 	$(MAKE) clean -e -C packet_forwarder
 	$(MAKE) clean -e -C util_net_downlink
 	$(MAKE) clean -e -C util_chip_id
+	$(MAKE) clean -e -C util_pkt_logger
+	$(MAKE) clean -e -C util_spi_stress
+	$(MAKE) clean -e -C util_tx_test
+	$(MAKE) clean -e -C util_lbt_test
+	$(MAKE) clean -e -C util_tx_continuous
+	$(MAKE) clean -e -C util_spectral_scan
 
 install:
 	$(MAKE) install -e -C libloragw
 	$(MAKE) install -e -C packet_forwarder
 	$(MAKE) install -e -C util_net_downlink
 	$(MAKE) install -e -C util_chip_id
+	$(MAKE) install -e -C util_pkt_logger
+	$(MAKE) install -e -C util_spi_stress
+	$(MAKE) install -e -C util_tx_test
+	$(MAKE) install -e -C util_lbt_test
+	$(MAKE) install -e -C util_tx_continuous
+	$(MAKE) install -e -C util_spectral_scan
+
 
 install_conf:
 	$(MAKE) install_conf -e -C packet_forwarder
