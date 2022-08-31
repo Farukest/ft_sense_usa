@@ -13,12 +13,12 @@
         "radio_0": {
             "enable": true,
             "type": "SX1250",
-            "freq": 867500000,
+            "freq": 904300000,
             "rssi_offset": -215.4,
             "rssi_tcomp": {"coeff_a": 0, "coeff_b": 0, "coeff_c": 20.41, "coeff_d": 2162.56, "coeff_e": 0},
             "tx_enable": true,
-            "tx_freq_min": 863000000,
-            "tx_freq_max": 870000000,
+            "tx_freq_min": 902000000,
+            "tx_freq_max": 928000000,
             "tx_gain_lut":[
                 {"rf_power": 12, "pa_gain": 1, "pwr_idx": 4},
                 {"rf_power": 13, "pa_gain": 1, "pwr_idx": 5},
@@ -41,57 +41,66 @@
         "radio_1": {
             "enable": true,
             "type": "SX1250",
-            "freq": 868500000,
+            "freq": 905000000,
             "rssi_offset": -215.4,
             "rssi_tcomp": {"coeff_a": 0, "coeff_b": 0, "coeff_c": 20.41, "coeff_d": 2162.56, "coeff_e": 0},
             "tx_enable": false
         },
         "chan_multiSF_0": {
+            /* Channel 8, 903.900 Mhz */
             "enable": true,
-            "radio": 1,
+            "radio": 0,
             "if": -400000
         },
         "chan_multiSF_1": {
+            /* Channel 9, 904.100 Mhz */
             "enable": true,
-            "radio": 1,
+            "radio": 0,
             "if": -200000
         },
         "chan_multiSF_2": {
+            /* Channel 10, 904.300 Mhz */
             "enable": true,
-            "radio": 1,
+            "radio": 0,
             "if": 0
         },
         "chan_multiSF_3": {
-            "enable": true,
-            "radio": 0,
-            "if": -400000
-        },
-        "chan_multiSF_4": {
-            "enable": true,
-            "radio": 0,
-            "if": -200000
-        },
-        "chan_multiSF_5": {
-            "enable": true,
-            "radio": 0,
-            "if": 0
-        },
-        "chan_multiSF_6": {
+            /* Channel 11, 904.500 Mhz */
             "enable": true,
             "radio": 0,
             "if": 200000
         },
-        "chan_multiSF_7": {
-            "enable": true,
-            "radio": 0,
-            "if": 400000
-        },
-        "chan_Lora_std": {
+        "chan_multiSF_4": {
+            /* Channel 12, 904.700 Mhz */
             "enable": true,
             "radio": 1,
-            "if": -200000,
-            "bandwidth": 250000,
-            "spread_factor": 7
+            "if": -300000
+        },
+        "chan_multiSF_5": {
+            /* Channel 13, 904.900 Mhz */
+            "enable": true,
+            "radio": 1,
+            "if": -100000
+        },
+        "chan_multiSF_6": {
+            /* Channel 14, 905.100 Mhz */
+            "enable": true,
+            "radio": 1,
+            "if": 100000
+        },
+        "chan_multiSF_7": {
+            /* Channel 15, 905.300 Mhz */
+            "enable": true,
+            "radio": 1,
+            "if": 300000
+        },
+        "chan_Lora_std": {
+            /* Channel 65 (fat channel), 912.6 Mhz */
+            "enable": true,
+            "radio": 0,
+            "if": 300000,
+            "bandwidth": 500000,
+            "spread_factor": 8
         },
         "chan_FSK": {
             /* disabled */
@@ -106,8 +115,8 @@
         "gps_i2c_path": "/dev/i2c-1",
         "gateway_ID": "AA555A0000000000",
         /* change with default server address/ports */
-		"collector_address": "replace_collector_address",
         "server_address": "localhost",
+		"collector_address": "replace_collector_address",
         "serv_port_up": 1680,
         "serv_port_down": 1680,
         /* adjust the following parameters for your network */
