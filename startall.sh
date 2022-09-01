@@ -74,8 +74,7 @@ done
 echo 'Jobs adding to cron..'
 cd /home/ft/ && ./addcron.sh
 
-default_docker=$(balena ps -a|grep pktfwd|awk -F" " '{print $NF}')
-balena stop $default_docker
+service cron restart
 
 mount -o rw,remount /home/ft/logs/
 
