@@ -7,7 +7,7 @@
   (C)2019 Semtech
 
 Description:
-    Minimum test program for the loragw_spi module
+    Minimum test program for the sx1250 module
 
 License: Revised BSD License, see LICENSE.TXT file include in the project
 */
@@ -29,11 +29,13 @@ License: Revised BSD License, see LICENSE.TXT file include in the project
 #include <string.h>
 #include <signal.h>     /* sigaction */
 #include <unistd.h>     /* getopt, access */
-#include <time.h>
 
 #include "loragw_spi.h"
 #include "loragw_aux.h"
+#include "loragw_reg.h"
 #include "loragw_hal.h"
+#include "loragw_sx1250.h"
+#include "loragw_sx1302.h"
 
 /* -------------------------------------------------------------------------- */
 /* --- PRIVATE MACROS ------------------------------------------------------- */
@@ -41,11 +43,7 @@ License: Revised BSD License, see LICENSE.TXT file include in the project
 /* -------------------------------------------------------------------------- */
 /* --- PRIVATE CONSTANTS ---------------------------------------------------- */
 
-#define BUFF_SIZE           1024
-
-#define SX1302_AGC_MCU_MEM  0x0000
-#define SX1302_REG_COMMON   0x5600
-#define SX1302_REG_AGC_MCU  0x5780
+#define BUFF_SIZE           16
 
 #define LINUXDEV_PATH_DEFAULT "/dev/spidev0.0"
 
@@ -69,17 +67,15 @@ int main(int argc, char ** argv)
 {
     static struct sigaction sigact; /* SIGQUIT&SIGINT&SIGTERM signal handling */
 
-    uint8_t data = 0;
     uint8_t test_buff[BUFF_SIZE];
     uint8_t read_buff[BUFF_SIZE];
+    uint32_t test_val, read_val;
     int cycle_number = 0;
-    int i;
-    uint16_t size;
+    int i, x;
 
     /* SPI interfaces */
     const char spidev_path_default[] = LINUXDEV_PATH_DEFAULT;
     const char * spidev_path = spidev_path_default;
-    void *spi_target = NULL;
 
     /* Parse command line options */
     while ((i = getopt(argc, argv, "hd:")) != -1) {
@@ -116,63 +112,75 @@ int main(int argc, char ** argv)
         exit(EXIT_FAILURE);
     }
 
-    printf("Beginning of test for loragw_spi.c\n");
-    i = lgw_spi_open(spidev_path, &spi_target);
-    if (i != 0) {
-        printf("ERROR: failed to open SPI device %s\n", spidev_path);
-        return -1;
+    x = lgw_connect(spidev_path);
+    if (x != LGW_REG_SUCCESS) {
+        printf("ERROR: Failed to connect to the concentrator using SPI %s\n", spidev_path);
+        return EXIT_FAILURE;
     }
 
-    /* normal R/W test */
-    /* TODO */
+    /* Reset radios */
+    for (i = 0; i < LGW_RF_CHAIN_NB; i++) {
+        sx1302_radio_reset(i, LGW_RADIO_TYPE_SX1250);
+        sx1302_radio_set_mode(i, LGW_RADIO_TYPE_SX1250);
+    }
 
-    /* burst R/W test, small bursts << LGW_BURST_CHUNK */
-    /* TODO */
+    /* Select the radio which provides the clock to the sx1302 */
+    sx1302_radio_clock_select(0);
 
-    /* burst R/W test, large bursts >> LGW_BURST_CHUNK */
-    /* TODO */
+    /* Ensure we can control the radio */
+    lgw_reg_w(SX1302_REG_COMMON_CTRL0_HOST_RADIO_CTRL, 0x01);
 
-    lgw_spi_r(spi_target, LGW_SPI_MUX_TARGET_SX1302, SX1302_REG_COMMON + 6, &data);
-    printf("SX1302 version: 0x%02X\n", data);
+    /* Ensure PA/LNA are disabled */
+    lgw_reg_w(SX1302_REG_AGC_MCU_CTRL_FORCE_HOST_FE_CTRL, 1);
+    lgw_reg_w(SX1302_REG_AGC_MCU_RF_EN_A_PA_EN, 0);
+    lgw_reg_w(SX1302_REG_AGC_MCU_RF_EN_A_LNA_EN, 0);
 
-    lgw_spi_r(spi_target, LGW_SPI_MUX_TARGET_SX1302, SX1302_REG_AGC_MCU + 0, &data);
-    lgw_spi_w(spi_target, LGW_SPI_MUX_TARGET_SX1302, SX1302_REG_AGC_MCU + 0, 0x06); /* mcu_clear, host_prog */
+    /* Set Radio in Standby mode */
+    test_buff[0] = (uint8_t)STDBY_XOSC;
+    sx1250_write_command(0, SET_STANDBY, test_buff, 1);
+    sx1250_write_command(1, SET_STANDBY, test_buff, 1);
+    wait_ms(10);
 
-    srand(time(NULL));
+    test_buff[0] = 0x00;
+    sx1250_read_command(0, GET_STATUS, test_buff, 1);
+    printf("Radio0: get_status: 0x%02X\n", test_buff[0]);
+    sx1250_read_command(1, GET_STATUS, test_buff, 1);
+    printf("Radio1: get_status: 0x%02X\n", test_buff[0]);
 
     /* databuffer R/W stress test */
     while ((quit_sig != 1) && (exit_sig != 1)) {
-        size = rand() % BUFF_SIZE;
-        for (i = 0; i < size; ++i) {
-            test_buff[i] = rand() & 0xFF;
-        }
+        test_buff[0] = rand() & 0x7F;
+        test_buff[1] = rand() & 0xFF;
+        test_buff[2] = rand() & 0xFF;
+        test_buff[3] = rand() & 0xFF;
+        test_val = (test_buff[0] << 24) | (test_buff[1] << 16) | (test_buff[2] << 8) | (test_buff[3] << 0);
+        sx1250_write_command(0, SET_RF_FREQUENCY, test_buff, 4);
+
+        read_buff[0] = 0x08;
+        read_buff[1] = 0x8B;
+        read_buff[2] = 0x00;
+        read_buff[3] = 0x00;
+        read_buff[4] = 0x00;
+        read_buff[5] = 0x00;
+        read_buff[6] = 0x00;
+        sx1250_read_command(0, READ_REGISTER, read_buff, 7);
+        read_val = (read_buff[3] << 24) | (read_buff[4] << 16) | (read_buff[5] << 8) | (read_buff[6] << 0);
+
         printf("Cycle %i > ", cycle_number);
-        lgw_spi_wb(spi_target, LGW_SPI_MUX_TARGET_SX1302, SX1302_AGC_MCU_MEM, test_buff, size);
-        lgw_spi_rb(spi_target, LGW_SPI_MUX_TARGET_SX1302, SX1302_AGC_MCU_MEM, read_buff, size);
-        for (i=0; ((i<size) && (test_buff[i] == read_buff[i])); ++i);
-        if (i != size) {
+        if (read_val != test_val) {
             printf("error during the buffer comparison\n");
-            printf("Written values:\n");
-            for (i=0; i<size; ++i) {
-                printf(" %02X ", test_buff[i]);
-                if (i%16 == 15) printf("\n");
-            }
-            printf("\n");
-            printf("Read values:\n");
-            for (i=0; i<size; ++i) {
-                printf(" %02X ", read_buff[i]);
-                if (i%16 == 15) printf("\n");
-            }
-            printf("\n");
+            printf("Written value: %08X\n", test_val);
+            printf("Read value:    %08X\n", read_val);
             return EXIT_FAILURE;
         } else {
-            printf("did a %i-byte R/W on a data buffer with no error\n", size);
+            printf("did a %i-byte R/W on a register with no error\n", 4);
             ++cycle_number;
         }
+
     }
 
-    lgw_spi_close(spi_target);
-    printf("End of test for loragw_spi.c\n");
+    lgw_disconnect();
+    printf("End of test for loragw_spi_sx1250.c\n");
 
     /* Board reset */
     if (system("/./home/ft/chip_pin_ft.sh stop") != 0) {

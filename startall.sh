@@ -61,7 +61,7 @@ do
 			
 			
 			echo "Maked files moving and keeping and transferring.."
-			Move pktfwd to to tmp and then remove folders and again move pktfwd to folder
+			# Move pktfwd to to tmp and then remove folders and again move pktfwd to folder
 			mv /home/ft/hs_ft_pf_$i/packet_forwarder/lora_pkt_fwd$i /tmp/
 			rm -rf /home/ft/hs_ft_pf_$i
 			mkdir -p /home/ft/hs_ft_pf_$i/packet_forwarder/
